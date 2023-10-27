@@ -17,7 +17,7 @@ fn decode_bencoded_value(encoded_value: &str) -> serde_json::Value {
     }else if  encoded_value.chars().next().unwrap() == 'i' {
         // Example: "5:hello" -> "hello"
         let e_index = encoded_value.find('e').unwrap();
-        let number_string = &encoded_value[1..colon_index];
+        let number_string = &encoded_value[1..e_index];
         let number = number_string.parse::<i64>().unwrap();
         return serde_json::Value::Number(serde_json::Number::from(number));
     }
