@@ -39,7 +39,7 @@ fn main() {
         } else if let Value::Bytes(b) = decoded_value {
             print!("{:?}", String::from_utf8(b.to_vec()).unwrap());
         } else {
-            print!("unknown");
+            print!("unknown for this (dictionary or list)");
         }
 
         // println!("{:?}", decoded_value);
