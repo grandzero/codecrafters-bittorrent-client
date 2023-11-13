@@ -30,6 +30,9 @@ fn print_list(decoded_value: &Value, is_nested: bool) {
                 }
                 Value::List(_) => {
                     print_list(item, true);
+                    if pos != items.len() - 1 {
+                        print!(",");
+                    }
                 }
                 _ => (),
             };
