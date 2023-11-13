@@ -33,9 +33,9 @@ fn main() {
                 Value::Bytes(b) => print!("{:?}, ", String::from_utf8(b.to_vec()).unwrap()),
                 _ => (),
             });
-            print!("]");
+            print!("]\n");
         } else if let Value::Int(i) = decoded_value {
-            print!("{}", i);
+            println!("{}", i);
         } else if let Value::Bytes(b) = decoded_value {
             println!("{:?}", String::from_utf8(b.to_vec()).unwrap());
             // print!("\n");
