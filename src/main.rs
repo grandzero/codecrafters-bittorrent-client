@@ -44,9 +44,9 @@ fn main() {
                 };
             }
             if items.len() == 0 {
-                print!("]");
-            } else {
                 println!("]");
+            } else {
+                print!("]");
             }
         } else if let Value::Int(i) = decoded_value {
             println!("{}", i);
