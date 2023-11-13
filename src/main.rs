@@ -35,7 +35,7 @@ fn print_list(decoded_value: &Value, is_nested: bool) {
             };
         }
         if items.len() == 0 {
-            return print!("]");
+            return println!("]");
         } else {
             print!("]");
         }
