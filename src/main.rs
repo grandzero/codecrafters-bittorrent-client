@@ -51,7 +51,7 @@ fn main() {
         } else if let Value::Int(i) = decoded_value {
             println!("{}", i);
         } else if let Value::Bytes(b) = decoded_value {
-            println!("{}", String::from_utf8(b.to_vec()).unwrap());
+            println!("\"{}\"", String::from_utf8(b.to_vec()).unwrap());
             // print!("\n");
         } else {
             print!("unknown for this (dictionary or list)");
