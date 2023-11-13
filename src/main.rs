@@ -28,20 +28,30 @@ fn main() {
 
         if let Value::List(items) = decoded_value {
             print!("[");
-
-            items.iter().for_each(|item| match item {
-                Value::Int(i) => {
-                    print!("{}, ", i)
-                }
-                Value::Bytes(b) => print!("{:?}, ", String::from_utf8(b.to_vec()).unwrap()),
-                _ => (),
-            });
-            // println!("{}", items.len());
-            print!("]{}", if items.len() == 0 { "\n" } else { "" });
+            for (pos, item) in items.iter().enumerate() {
+                match item {
+                    Value::Int(i) => {
+                        print!("{}{}", i, if pos == items.len() - 1 { "" } else { "," })
+                    }
+                    Value::Bytes(b) => {
+                        print!(
+                            "\"{}\"{}",
+                            String::from_utf8(b.to_vec()).unwrap(),
+                            if pos == items.len() - 1 { "" } else { "," }
+                        )
+                    }
+                    _ => (),
+                };
+            }
+            if items.len() == 0 {
+                print!("]");
+            } else {
+                println!("]");
+            }
         } else if let Value::Int(i) = decoded_value {
             println!("{}", i);
         } else if let Value::Bytes(b) = decoded_value {
-            println!("{:?}", String::from_utf8(b.to_vec()).unwrap());
+            println!("{}", String::from_utf8(b.to_vec()).unwrap());
             // print!("\n");
         } else {
             print!("unknown for this (dictionary or list)");
