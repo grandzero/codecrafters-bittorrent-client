@@ -28,12 +28,15 @@ fn main() {
 
         if let Value::List(items) = decoded_value {
             print!("[");
+
             items.iter().for_each(|item| match item {
-                Value::Int(i) => print!("{}, ", i),
+                Value::Int(i) => {
+                    print!("{}, ", i)
+                }
                 Value::Bytes(b) => print!("{:?}, ", String::from_utf8(b.to_vec()).unwrap()),
                 _ => (),
             });
-            print!("]");
+            print!("]{}", if items.len() > 0 { "\n" } else { "" });
         } else if let Value::Int(i) = decoded_value {
             println!("{}", i);
         } else if let Value::Bytes(b) = decoded_value {
