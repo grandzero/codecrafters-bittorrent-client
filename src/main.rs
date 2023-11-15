@@ -99,7 +99,7 @@ fn print_decoded_value(decoded_value: &Value) {
             println!("{}", i)
         }
         Value::Bytes(b) => {
-            println!("{}", String::from_utf8(b.to_vec()).unwrap())
+            println!("\"{}\"", String::from_utf8(b.to_vec()).unwrap())
         }
         Value::List(_) => {
             print_list(decoded_value, false);
