@@ -96,10 +96,10 @@ fn print_list(decoded_value: &Value, is_nested: bool) {
 fn print_decoded_value(decoded_value: &Value) {
     match decoded_value {
         Value::Int(i) => {
-            print!("{}", i)
+            println!("{}", i)
         }
         Value::Bytes(b) => {
-            print!("{}", String::from_utf8(b.to_vec()).unwrap())
+            println!("{}", String::from_utf8(b.to_vec()).unwrap())
         }
         Value::List(_) => {
             print_list(decoded_value, false);
