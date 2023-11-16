@@ -1,3 +1,4 @@
+#![warn(dead_code)]
 use anyhow::Result;
 use bendy::decoding::{Error, FromBencode, Object, ResultExt};
 use bendy::encoding::AsString;
