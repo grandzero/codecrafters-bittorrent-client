@@ -3,6 +3,7 @@ use bendy::{
     decoding::{Error, FromBencode, Object, ResultExt},
     encoding::AsString,
 };
+use std::fmt::{self, Display};
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum BencodeValue {
@@ -314,6 +315,16 @@ pub fn print_decoded_value(decoded_value: &BencodeValue) {
             print_dictionary(decoded_value, false);
         }
     };
+}
+
+impl Display for MetaInfo {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "Announce: {}\nName: {}\nPiece Length: {}\nLength: {}\n",
+            self.announce, self.info.name, self.info.piece_length, self.info.file_length
+        )
+    }
 }
 
 pub fn decode_torrent(encoded_value: &Vec<u8>) -> Result<MetaInfo, ParseError> {
