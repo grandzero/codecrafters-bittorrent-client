@@ -5,7 +5,6 @@ use bendy::{
 };
 use sha1::{Digest, Sha1};
 use std::fmt::{self, Display};
-
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum BencodeValue {
     Int(i64),
@@ -25,9 +24,9 @@ pub struct MetaInfo {
 #[derive(Debug)]
 pub struct Info {
     pub name: String,
-    pub piece_length: String,
+    pub piece_length: u64,
     pub pieces: Vec<u8>,
-    pub length: String,
+    pub length: i64,
 }
 
 pub enum ParseError {
@@ -143,10 +142,8 @@ impl FromBencode for Info {
         while let Some(pair) = dict_dec.next_pair()? {
             match pair {
                 (b"length", value) => {
-                    length = value
-                        .try_into_integer()
+                    length = i64::decode_bencode_object(value)
                         .context("length")
-                        .map(ToString::to_string)
                         .map(Some)?;
                 }
                 (b"name", value) => {
@@ -155,10 +152,8 @@ impl FromBencode for Info {
                         .map(Some)?;
                 }
                 (b"piece length", value) => {
-                    piece_length = value
-                        .try_into_integer()
+                    piece_length = u64::decode_bencode_object(value)
                         .context("piece length")
-                        .map(ToString::to_string)
                         .map(Some)?;
                 }
                 (b"pieces", value) => {
