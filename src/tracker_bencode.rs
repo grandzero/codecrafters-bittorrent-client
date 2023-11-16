@@ -10,8 +10,6 @@ pub struct TrackerResponse {
     complete: Option<i32>,
     incomplete: Option<i32>,
     min_interval: Option<i32>,
-    downloaded: Option<i32>,
-    uploaded: Option<i32>,
 }
 
 impl FromBencode for TrackerResponse {
@@ -30,8 +28,6 @@ impl FromBencode for TrackerResponse {
         let mut complete = None;
         let mut incomplete = None;
         let mut min_interval = None;
-        let mut downloaded = None;
-        let mut uploaded = None;
 
         let mut dict_dec = object.try_into_dictionary()?;
         while let Some(pair) = dict_dec.next_pair()? {
@@ -41,39 +37,16 @@ impl FromBencode for TrackerResponse {
                         .context("interval")
                         .map(Some)?;
                 }
-                (b"downloaded", value) => {
-                    downloaded = i32::decode_bencode_object(value)
-                        .context("downloaded")
-                        .map(Some)?;
-                }
-                (b"uploaded", value) => {
-                    uploaded = i32::decode_bencode_object(value)
-                        .context("uploaded")
-                        .map(Some)?;
-                }
                 (b"peers", value) => {
-                    //let peer_bytes = Vec::<u8>::decode_bencode_object(value)?;
-                    let mut peer_bytes = value.try_into_list()?;
-                    let mut result_bytes_vector: Vec<[u8; 6]> = Vec::new();
-                    while let Ok(Some(val)) = peer_bytes.next_object() {
-                        if let Ok(v) = val.try_into_bytes() {
-                            if v.len() == 6 {
-                                let mut peer_bytes_array: [u8; 6] = [0; 6];
-                                peer_bytes_array.copy_from_slice(&v);
-                                result_bytes_vector.push(peer_bytes_array);
-                            }
-                        }
-                        //result_bytes_vector.append(val.collect::<Vec<[u8; 6]>>(),);
-                        // if let Some(v) = Some(
-                        //     val.chunks(6)
-                        //         .map(|chunk| <[u8; 6]>::try_from(chunk).unwrap())
-                        //         .collect::<Vec<[u8; 6]>>(),
-                        // ) {
-                        //     peers = Some(v);
-                        // }
+                    let peer_bytes = Vec::<u8>::decode_bencode_object(value)?;
+                    if let Some(val) = Some(
+                        peer_bytes
+                            .chunks(6)
+                            .map(|chunk| <[u8; 6]>::try_from(chunk).unwrap())
+                            .collect::<Vec<[u8; 6]>>(),
+                    ) {
+                        peers = Some(val);
                     }
-                    peers = Some(result_bytes_vector);
-                    println!("{:?}", peers);
                 }
                 (b"complete", value) => {
                     complete = i32::decode_bencode_object(value)
@@ -110,8 +83,6 @@ impl FromBencode for TrackerResponse {
             complete,
             incomplete,
             min_interval,
-            downloaded,
-            uploaded,
         })
     }
 }
