@@ -13,7 +13,9 @@ pub fn create_url(
     let params_list = "?peer_id=12345678901234567890&port=6881&uploaded=0&downloaded=0&left=0&compact=1&info_hash=".to_owned() + &info_hash_parsed_as_url_encoding;
     let url = tracker_url.to_owned() + &params_list;
     let body = reqwest::blocking::get(&url)?;
-    let tracker_response = TrackerResponse::from_bencode(body.text()?.as_bytes());
+    let body_as_text = body.text()?;
+    println!("{:?}", body_as_text);
+    let tracker_response = TrackerResponse::from_bencode(body_as_text.as_bytes());
     if let Ok(res) = tracker_response {
         println!("{}", res);
     } else {
