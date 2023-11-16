@@ -4,7 +4,11 @@ use bendy::{
     decoding::{Error, FromBencode, Object, ResultExt},
     encoding::AsString,
 };
-use std::fmt::{self, Display};
+use std::{
+    fmt::{self, Display},
+    net::{IpAddr, Ipv4Addr},
+};
+// use std::net::{IpAddr, Ipv4Addr};
 
 #[derive(Debug)]
 pub struct TrackerResponse {
@@ -102,11 +106,12 @@ impl Display for TrackerResponse {
                 return Err(fmt::Error);
             } else {
                 for peer in peers.chunks(6) {
-                    writeln!(
-                        f,
-                        "{}.{}.{}.{}:{}{}",
-                        peer[0], peer[1], peer[2], peer[3], peer[4], peer[5]
-                    )?;
+                    let ip = IpAddr::V4(Ipv4Addr::new(peer[0], peer[1], peer[2], peer[3]));
+                    let port = u16::from_be_bytes([peer[4], peer[5]]);
+
+                    writeln!(f, "{}:{}", ip, port)?;
+
+                    //writeln!(f, "{}:{}", ip, port)?;
                 }
             }
         } else {
