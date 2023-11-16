@@ -321,7 +321,7 @@ impl Display for MetaInfo {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "Announce: {}\nName: {}\nPiece Length: {}\nLength: {}\n",
+            "Tracker URL: {}\nName: {}\nPiece Length: {}\nLength: {}\n",
             self.announce, self.info.name, self.info.piece_length, self.info.file_length
         )
     }
