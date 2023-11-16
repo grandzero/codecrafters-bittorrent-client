@@ -38,15 +38,28 @@ impl FromBencode for TrackerResponse {
                         .map(Some)?;
                 }
                 (b"peers", value) => {
-                    let peer_bytes = Vec::<u8>::decode_bencode_object(value)?;
-                    if let Some(val) = Some(
-                        peer_bytes
-                            .chunks(6)
-                            .map(|chunk| <[u8; 6]>::try_from(chunk).unwrap())
-                            .collect::<Vec<[u8; 6]>>(),
-                    ) {
-                        peers = Some(val);
+                    //let peer_bytes = Vec::<u8>::decode_bencode_object(value)?;
+                    let mut peer_bytes = value.try_into_list()?;
+                    let mut result_bytes_vector: Vec<[u8; 6]> = Vec::new();
+                    while let Ok(Some(val)) = peer_bytes.next_object() {
+                        if let Ok(v) = val.try_into_bytes() {
+                            if v.len() == 6 {
+                                let mut peer_bytes_array: [u8; 6] = [0; 6];
+                                peer_bytes_array.copy_from_slice(&v);
+                                result_bytes_vector.push(peer_bytes_array);
+                            }
+                        }
+                        //result_bytes_vector.append(val.collect::<Vec<[u8; 6]>>(),);
+                        // if let Some(v) = Some(
+                        //     val.chunks(6)
+                        //         .map(|chunk| <[u8; 6]>::try_from(chunk).unwrap())
+                        //         .collect::<Vec<[u8; 6]>>(),
+                        // ) {
+                        //     peers = Some(v);
+                        // }
                     }
+                    peers = Some(result_bytes_vector);
+                    println!("{:?}", peers);
                 }
                 (b"complete", value) => {
                     complete = i32::decode_bencode_object(value)
