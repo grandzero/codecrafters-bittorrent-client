@@ -22,12 +22,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!("{}", custom_torrent);
             println!("Pieces Hashes: ");
             print_pieces(&custom_torrent.info.pieces);
+            return Ok(());
+        } else {
+            println!("Error");
+            return Ok(());
+        }
+        //println!("{:?}", decoded_value);
+    } else if command == "peers" {
+        let torrent_content_as_bytes = fs::read(&args[2]).unwrap();
+        if let Ok(custom_torrent) = decode_torrent(&torrent_content_as_bytes) {
             let info_hash = custom_torrent.info_hash();
             tracker::create_url(&info_hash, &custom_torrent.announce)?;
         } else {
             println!("Error");
-        }
-        //println!("{:?}", decoded_value);
+            return Ok(());
+        };
     } else {
         println!("unknown command: {}", args[1])
     }
