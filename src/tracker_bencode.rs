@@ -46,7 +46,7 @@ impl FromBencode for TrackerResponse {
                 (b"peers", value) => {
                     peers = Vec::<u8>::decode_bencode_object(value)
                         .context("peers")
-                        .map(|bytes| Some(bytes))?;
+                        .map(|bytes| Some(&bytes))?;
                     // let peer_bytes = Vec::<u8>::decode_bencode_object(value)?;
                     // if let Some(val) = Some(
                     //     peer_bytes
