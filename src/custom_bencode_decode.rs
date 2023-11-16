@@ -344,6 +344,15 @@ impl ToBencode for Info {
     }
 }
 
+pub fn print_pieces(pieces: Vec<u8>) {
+    for chunk in pieces.chunks(20) {
+        for x in chunk {
+            print!("{:02x?}", x);
+        }
+        print!("\n");
+    }
+}
+
 pub fn decode_torrent(encoded_value: &Vec<u8>) -> Result<MetaInfo, ParseError> {
     if let Ok(val) = MetaInfo::from_bencode(encoded_value) {
         return Ok(val);

@@ -2,6 +2,7 @@ mod custom_bencode_decode;
 mod serde_bencode_prints;
 use custom_bencode_decode::decode_bn;
 use custom_bencode_decode::decode_torrent;
+use custom_bencode_decode::print_pieces;
 // use serde_bencode;
 // use serde_bencode::de;
 // use serde_bencode::value::Value;
@@ -28,6 +29,8 @@ fn main() {
         //print_decoded_value(&decoded_value);
         if let Ok(custom_torrent) = decode_torrent(&torrent_content_as_bytes) {
             println!("{}", custom_torrent);
+            println!("Pieces Hashes: ");
+            print_pieces(custom_torrent.info.pieces);
         } else {
             println!("Error");
         }
