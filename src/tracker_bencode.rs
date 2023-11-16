@@ -10,6 +10,8 @@ pub struct TrackerResponse {
     complete: Option<i32>,
     incomplete: Option<i32>,
     min_interval: Option<i32>,
+    downloaded: Option<i32>,
+    uploaded: Option<i32>,
 }
 
 impl FromBencode for TrackerResponse {
@@ -28,6 +30,8 @@ impl FromBencode for TrackerResponse {
         let mut complete = None;
         let mut incomplete = None;
         let mut min_interval = None;
+        let mut downloaded = None;
+        let mut uploaded = None;
 
         let mut dict_dec = object.try_into_dictionary()?;
         while let Some(pair) = dict_dec.next_pair()? {
@@ -35,6 +39,16 @@ impl FromBencode for TrackerResponse {
                 (b"interval", value) => {
                     interval = i32::decode_bencode_object(value)
                         .context("interval")
+                        .map(Some)?;
+                }
+                (b"downloaded", value) => {
+                    downloaded = i32::decode_bencode_object(value)
+                        .context("downloaded")
+                        .map(Some)?;
+                }
+                (b"uploaded", value) => {
+                    uploaded = i32::decode_bencode_object(value)
+                        .context("uploaded")
                         .map(Some)?;
                 }
                 (b"peers", value) => {
@@ -96,6 +110,8 @@ impl FromBencode for TrackerResponse {
             complete,
             incomplete,
             min_interval,
+            downloaded,
+            uploaded,
         })
     }
 }
