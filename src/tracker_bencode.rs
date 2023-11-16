@@ -61,16 +61,12 @@ impl FromBencode for TrackerResponse {
                         .context("complete")
                         .map(Some)?;
                 }
-                (b"complete", value) => {
-                    complete = i32::decode_bencode_object(value)
-                        .context("complete")
+                (b"incomplete", value) => {
+                    incomplete = i32::decode_bencode_object(value)
+                        .context("incomplete")
                         .map(Some)?;
                 }
-                (b"complete", value) => {
-                    complete = i32::decode_bencode_object(value)
-                        .context("complete")
-                        .map(Some)?;
-                }
+
                 (b"downloaded", value) => {
                     downloaded = i32::decode_bencode_object(value)
                         .context("downloaded")
