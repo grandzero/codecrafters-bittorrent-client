@@ -56,6 +56,11 @@ impl FromBencode for TrackerResponse {
                     //     peers = Some(val);
                     // }
                 }
+                (b"min interval", value) => {
+                    min_interval = i32::decode_bencode_object(value)
+                        .context("min interval")
+                        .map(Some)?;
+                }
                 (b"complete", value) => {
                     complete = i32::decode_bencode_object(value)
                         .context("complete")
