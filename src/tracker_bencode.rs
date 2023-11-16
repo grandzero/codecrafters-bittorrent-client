@@ -107,8 +107,6 @@ impl Display for TrackerResponse {
                         "{}.{}.{}.{}:{}{}",
                         peer[0], peer[1], peer[2], peer[3], peer[4], peer[5]
                     )?;
-
-                    //writeln!(f, "{}:{}", ip, port)?;
                 }
             }
         } else {
