@@ -323,6 +323,7 @@ impl Display for MetaInfo {
         let mut hasher = Sha1::new();
         hasher.update(self.info.to_bencode().unwrap());
         let result = hasher.finalize();
+        // println!("{:?}", self.info.to_bencode().unwrap());
         write!(
             f,
             "Tracker URL: {}\nName: {}\nPiece Length: {}\nLength: {}\nInfo Hash: {:x}",
