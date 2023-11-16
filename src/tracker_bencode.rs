@@ -1,12 +1,13 @@
 use anyhow::Result;
 use bendy::decoding::{Error, FromBencode, Object, ResultExt};
+use bendy::encoding::AsString;
 use std::fmt::{self, Display};
 use std::net::{IpAddr, Ipv4Addr};
 
 #[derive(Debug)]
 pub struct TrackerResponse {
     interval: Option<i32>,
-    peers: Option<Vec<[u8; 6]>>,
+    peers: Option<Vec<u8>>,
     complete: Option<i32>,
     incomplete: Option<i32>,
     min_interval: Option<i32>,
@@ -38,15 +39,18 @@ impl FromBencode for TrackerResponse {
                         .map(Some)?;
                 }
                 (b"peers", value) => {
-                    let peer_bytes = Vec::<u8>::decode_bencode_object(value)?;
-                    if let Some(val) = Some(
-                        peer_bytes
-                            .chunks(6)
-                            .map(|chunk| <[u8; 6]>::try_from(chunk).unwrap())
-                            .collect::<Vec<[u8; 6]>>(),
-                    ) {
-                        peers = Some(val);
-                    }
+                    peers = AsString::decode_bencode_object(value)
+                        .context("peers")
+                        .map(|bytes| Some(bytes.0))?;
+                    // let peer_bytes = Vec::<u8>::decode_bencode_object(value)?;
+                    // if let Some(val) = Some(
+                    //     peer_bytes
+                    //         .chunks(6)
+                    //         .map(|chunk| <[u8; 6]>::try_from(chunk).unwrap())
+                    //         .collect::<Vec<[u8; 6]>>(),
+                    // ) {
+                    //     peers = Some(val);
+                    // }
                 }
                 (b"complete", value) => {
                     complete = i32::decode_bencode_object(value)
@@ -90,10 +94,14 @@ impl FromBencode for TrackerResponse {
 impl Display for TrackerResponse {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if let Some(peers) = &self.peers {
-            for peer in peers.iter() {
-                let ip = IpAddr::V4(Ipv4Addr::new(peer[0], peer[1], peer[2], peer[3]));
-                let port = u16::from_be_bytes([peer[4], peer[5]]);
-                writeln!(f, "{}:{}", ip, port)?;
+            if peers.len() % 6 != 0 {
+                return Err(fmt::Error);
+            } else {
+                for peer in peers.chunks(6) {
+                    let ip = IpAddr::V4(Ipv4Addr::new(peer[0], peer[1], peer[2], peer[3]));
+                    let port = u16::from_be_bytes([peer[4], peer[5]]);
+                    writeln!(f, "{}:{}", ip, port)?;
+                }
             }
         } else {
             writeln!(
