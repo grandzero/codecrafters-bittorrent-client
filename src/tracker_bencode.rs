@@ -1,9 +1,10 @@
-#[allow(dead_code)]
 use anyhow::Result;
-use bendy::decoding::{Error, FromBencode, Object, ResultExt};
-use bendy::encoding::AsString;
+
+use bendy::{
+    decoding::{Error, FromBencode, Object, ResultExt},
+    encoding::AsString,
+};
 use std::fmt::{self, Display};
-use std::net::{IpAddr, Ipv4Addr};
 
 #[derive(Debug)]
 pub struct TrackerResponse {
@@ -12,8 +13,8 @@ pub struct TrackerResponse {
     complete: Option<i32>,
     incomplete: Option<i32>,
     min_interval: Option<i32>,
-    downloaded: Option<i32>,
-    uploaded: Option<i32>,
+    _downloaded: Option<i32>,
+    _uploaded: Option<i32>,
 }
 
 impl FromBencode for TrackerResponse {
@@ -44,18 +45,9 @@ impl FromBencode for TrackerResponse {
                         .map(Some)?;
                 }
                 (b"peers", value) => {
-                    peers = Vec::<u8>::decode_bencode_object(value)
+                    peers = AsString::decode_bencode_object(value)
                         .context("peers")
-                        .map(|bytes| Some(&bytes.clone()))?;
-                    // let peer_bytes = Vec::<u8>::decode_bencode_object(value)?;
-                    // if let Some(val) = Some(
-                    //     peer_bytes
-                    //         .chunks(6)
-                    //         .map(|chunk| <[u8; 6]>::try_from(chunk).unwrap())
-                    //         .collect::<Vec<[u8; 6]>>(),
-                    // ) {
-                    //     peers = Some(val);
-                    // }
+                        .map(|bytes| Some(bytes.0))?;
                 }
                 (b"min interval", value) => {
                     min_interval = i32::decode_bencode_object(value)
@@ -91,20 +83,14 @@ impl FromBencode for TrackerResponse {
             }
         }
 
-        // let interval = interval.ok_or_else(|| Error::missing_field("interval"))?;
-        // //let peers = peers.ok_or_else(|| Error::missing_field("peers"))?;
-        // let complete = complete.ok_or_else(|| Error::missing_field("complete"))?;
-        // let incomplete = incomplete.ok_or_else(|| Error::missing_field("incomplete"))?;
-        // let min_interval = min_interval.ok_or_else(|| Error::missing_field("min interval"))?;
-
         Ok(TrackerResponse {
             interval,
             peers,
             complete,
             incomplete,
             min_interval,
-            downloaded,
-            uploaded,
+            _downloaded: downloaded,
+            _uploaded: uploaded,
         })
     }
 }
@@ -116,9 +102,13 @@ impl Display for TrackerResponse {
                 return Err(fmt::Error);
             } else {
                 for peer in peers.chunks(6) {
-                    let ip = IpAddr::V4(Ipv4Addr::new(peer[0], peer[1], peer[2], peer[3]));
-                    let port = u16::from_be_bytes([peer[4], peer[5]]);
-                    writeln!(f, "{}:{}", ip, port)?;
+                    writeln!(
+                        f,
+                        "{}.{}.{}.{}:{}{}",
+                        peer[0], peer[1], peer[2], peer[3], peer[4], peer[5]
+                    )?;
+
+                    //writeln!(f, "{}:{}", ip, port)?;
                 }
             }
         } else {
