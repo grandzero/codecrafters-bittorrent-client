@@ -1,8 +1,9 @@
 use anyhow::Result;
 use bendy::{
     decoding::{Error, FromBencode, Object, ResultExt},
-    encoding::AsString,
+    encoding::{AsString, ToBencode},
 };
+use sha1::{Digest, Sha1};
 use std::fmt::{self, Display};
 
 #[derive(Debug, Eq, PartialEq, Clone)]
@@ -26,7 +27,7 @@ pub struct Info {
     pub name: String,
     pub piece_length: String,
     pub pieces: Vec<u8>,
-    pub file_length: String,
+    pub length: String,
 }
 
 pub enum ParseError {
@@ -133,7 +134,7 @@ impl FromBencode for Info {
     where
         Self: Sized,
     {
-        let mut file_length = None;
+        let mut length = None;
         let mut name = None;
         let mut piece_length = None;
         let mut pieces = None;
@@ -142,9 +143,9 @@ impl FromBencode for Info {
         while let Some(pair) = dict_dec.next_pair()? {
             match pair {
                 (b"length", value) => {
-                    file_length = value
+                    length = value
                         .try_into_integer()
-                        .context("file.length")
+                        .context("length")
                         .map(ToString::to_string)
                         .map(Some)?;
                 }
@@ -156,7 +157,7 @@ impl FromBencode for Info {
                 (b"piece length", value) => {
                     piece_length = value
                         .try_into_integer()
-                        .context("length")
+                        .context("piece length")
                         .map(ToString::to_string)
                         .map(Some)?;
                 }
@@ -173,14 +174,14 @@ impl FromBencode for Info {
             }
         }
 
-        let file_length = file_length.ok_or_else(|| Error::missing_field("file_length"))?;
+        let length = length.ok_or_else(|| Error::missing_field("length"))?;
         let name = name.ok_or_else(|| Error::missing_field("name"))?;
-        let piece_length = piece_length.ok_or_else(|| Error::missing_field("piece_length"))?;
+        let piece_length = piece_length.ok_or_else(|| Error::missing_field("piece length"))?;
         let pieces = pieces.ok_or_else(|| Error::missing_field("pieces"))?;
 
         // Check that we discovered all necessary fields
         Ok(Info {
-            file_length,
+            length,
             name,
             piece_length,
             pieces,
@@ -319,11 +320,31 @@ pub fn print_decoded_value(decoded_value: &BencodeValue) {
 
 impl Display for MetaInfo {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut hasher = Sha1::new();
+        hasher.update(self.info.to_bencode().unwrap());
+        let result = hasher.finalize();
         write!(
             f,
-            "Tracker URL: {}\nName: {}\nPiece Length: {}\nLength: {}\n",
-            self.announce, self.info.name, self.info.piece_length, self.info.file_length
+            "Tracker URL: {}\nName: {}\nPiece Length: {}\nLength: {}\nInfo Hash: {:x}",
+            self.announce, self.info.name, self.info.piece_length, self.info.length, result
         )
+    }
+}
+
+impl ToBencode for Info {
+    const MAX_DEPTH: usize = 1;
+
+    fn encode(
+        &self,
+        encoder: bendy::encoding::SingleItemEncoder,
+    ) -> std::prelude::v1::Result<(), bendy::encoding::Error> {
+        encoder.emit_dict(|mut e| {
+            e.emit_pair(b"length", &self.length)?;
+            e.emit_pair(b"name", &self.name)?;
+            e.emit_pair(b"piece length", &self.piece_length)?;
+            e.emit_pair(b"pieces", AsString(&self.pieces))
+        })?;
+        Ok(())
     }
 }
 
