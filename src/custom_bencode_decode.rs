@@ -313,6 +313,13 @@ pub fn print_decoded_value(decoded_value: &BencodeValue) {
     };
 }
 
+pub fn get_info_hash(info: &Info) -> Vec<u8> {
+    let mut hasher = Sha1::new();
+    hasher.update(info.to_bencode().unwrap());
+    let result = hasher.finalize();
+    result.to_vec()
+}
+
 impl Display for MetaInfo {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut hasher = Sha1::new();
@@ -344,13 +351,20 @@ impl ToBencode for Info {
     }
 }
 
-pub fn print_pieces(pieces: Vec<u8>) {
+impl MetaInfo {
+    pub fn info_hash(&self) -> Vec<u8> {
+        get_info_hash(&self.info)
+    }
+}
+
+pub fn print_pieces(pieces: &Vec<u8>) -> &Vec<u8> {
     for chunk in pieces.chunks(20) {
         for x in chunk {
             print!("{:02x?}", x);
         }
         print!("\n");
     }
+    &pieces
 }
 
 pub fn decode_torrent(encoded_value: &Vec<u8>) -> Result<MetaInfo, ParseError> {
