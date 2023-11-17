@@ -49,6 +49,9 @@ impl FromBencode for TrackerResponse {
                         .map(Some)?;
                 }
                 (b"peers", value) => {
+                    if let Object::Bytes(val) = value {
+                        println!("Peers: {:?}", val);
+                    }
                     peers = AsString::decode_bencode_object(value)
                         .context("peers")
                         .map(|bytes| Some(bytes.0))?;
@@ -98,28 +101,29 @@ impl FromBencode for TrackerResponse {
         })
     }
 }
-// pub enum _TrackerResponseError {
-//     InvalidIpAndPort,
-// }
-// impl TrackerResponse {
-//     pub fn peers_as_ip_and_port(&self) -> Result<Vec<(IpAddr, u16)>, _TrackerResponseError> {
-//         if let Some(peers) = &self.peers {
-//             if peers.len() % 6 != 0 {
-//                 return Err(_TrackerResponseError::InvalidIpAndPort);
-//             } else {
-//                 let mut result: Vec<(IpAddr, u16)> = Vec::new();
-//                 for peer in peers.chunks(6) {
-//                     let ip = IpAddr::V4(Ipv4Addr::new(peer[0], peer[1], peer[2], peer[3]));
-//                     let port = u16::from_be_bytes([peer[4], peer[5]]);
-//                     result.push((ip, port));
-//                 }
-//                 return Ok(result);
-//             }
-//         } else {
-//             return Err(_TrackerResponseError::InvalidIpAndPort);
-//         }
-//     }
-// }
+#[derive(Debug)]
+pub enum _TrackerResponseError {
+    InvalidIpAndPort,
+}
+impl TrackerResponse {
+    pub fn peers_as_ip_and_port(&self) -> Result<Vec<(IpAddr, u16)>, _TrackerResponseError> {
+        if let Some(peers) = &self.peers {
+            if peers.len() % 6 != 0 {
+                return Err(_TrackerResponseError::InvalidIpAndPort);
+            } else {
+                let mut result: Vec<(IpAddr, u16)> = Vec::new();
+                for peer in peers.chunks(6) {
+                    let ip = IpAddr::V4(Ipv4Addr::new(peer[0], peer[1], peer[2], peer[3]));
+                    let port = u16::from_be_bytes([peer[4], peer[5]]);
+                    result.push((ip, port));
+                }
+                return Ok(result);
+            }
+        } else {
+            return Err(_TrackerResponseError::InvalidIpAndPort);
+        }
+    }
+}
 
 impl Display for TrackerResponse {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

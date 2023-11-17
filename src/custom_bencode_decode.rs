@@ -28,11 +28,22 @@ pub struct Info {
     pub pieces: Vec<u8>,
     pub length: i64,
 }
-
+#[derive(Debug)]
 pub enum ParseError {
     InvalidFormat,
 }
 
+impl From<Box<dyn std::error::Error>> for ParseError {
+    fn from(_error: Box<dyn std::error::Error>) -> Self {
+        ParseError::InvalidFormat
+    }
+}
+
+impl From<&str> for ParseError {
+    fn from(_error: &str) -> Self {
+        ParseError::InvalidFormat
+    }
+}
 impl FromBencode for MetaInfo {
     // Try to parse with a `max_depth` of two.
     //

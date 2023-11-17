@@ -1,15 +1,16 @@
 mod custom_bencode_decode;
+mod protocol_message;
 mod tcphandshake;
 mod tracker;
 mod tracker_bencode;
 use custom_bencode_decode::decode_bn;
 use custom_bencode_decode::decode_torrent;
 use custom_bencode_decode::print_pieces;
+use protocol_message::download_file;
 use std::fs;
 use tcphandshake::complete_tcp_handshake_with_peer;
 
 use std::env;
-
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
     let command = &args[1];
@@ -51,36 +52,42 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             } else {
                 return Err("Error occured while completing tcp handshake".into());
             }
-
-            // tracker::get_torrent_response(&info_hash, &custom_torrent.announce)
-            //     // .and_then(|res| {
-            //     //     if let Ok(peers) = res.peers_as_ip_and_port() {
-            //     //         println!("Peers: {:?}", peers);
-            //     //         return Ok(peers);
-            //     //     } else {
-            //     //         println!("Error: Peers could not found");
-            //     //         return Err("Error: Peers could not found".into());
-            //     //     }
-            //     // })
-            //     .and_then(|peers| {
-            //         // for peer in peers {
-            //         //     println!("Peer: {:?}", peer);
-            //         if let Ok(peer_id) = complete_tcp_handshake_with_peer(
-            //             &peer_ip, //format!("{}:{}", peer.0, peer.1).as_str(),
-            //             &info_hash,
-            //         ) {
-            //             return Ok(peer_id);
-            //         }
-            //         // }
-            //         return Err("Error occured while completing tcp handshake".into());
-            //     })
-            //     .or_else(|err| {
-            //         //println!("Error: {:?}", err);
-            //         return Err(err);
-            //     });
-        } else {
-            return Err("Could not complete parsing handshake".into());
-        };
+        }
+    } else if command == "download_piece" {
+        println!("Downloading piece");
+        let o = &args[2];
+        let mut output_path = &String::from("output.torrent");
+        if o == "o" {
+            output_path = &args[3];
+        }
+        let torrent_file_name = &args[4];
+        let piece_index = (&args[5]).parse::<i32>().unwrap();
+        let torrent_content_as_bytes = fs::read(torrent_file_name).unwrap();
+        let custom_torrent = decode_torrent(&torrent_content_as_bytes).unwrap();
+        let info_hash: Vec<u8> = custom_torrent.info_hash();
+        let result = tracker::get_torrent_response(&info_hash, &custom_torrent.announce)
+            .and_then(|res| {
+                if let Ok(peers) = res.peers_as_ip_and_port() {
+                    return Ok(peers);
+                } else {
+                    return Err("Error: Peers could not found".into());
+                }
+            })
+            .and_then(|peers| {
+                if peers.len() == 0 {
+                    return Err("Error: Peers length cant be zero".into());
+                }
+                let peer_ip = peers[0].0.to_string() + ":" + &peers[0].1.to_string();
+                complete_tcp_handshake_with_peer(&peer_ip, &info_hash)
+            })
+            .and_then(|mut stream| {
+                download_file(&mut stream, piece_index, custom_torrent, &output_path)
+            })
+            .or_else(|err| {
+                println!("Error: {:?}", err);
+                return Err(err);
+            });
+        return result;
     } else {
         println!("unknown command: {}", args[1])
     }
