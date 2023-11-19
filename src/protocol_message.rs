@@ -18,7 +18,7 @@ impl ProtocolMessage {
     }
 
     pub fn deserialize(response: &Vec<u8>) -> Result<ProtocolMessage, Box<dyn std::error::Error>> {
-        let length = response.len() as u32 + 4;
+        let length = response.len() as u32;
         let message_type = ProtocolMessageType::from_u8(response[0])?;
         let payload = response[1..].to_vec();
         Ok(ProtocolMessage {
@@ -63,22 +63,10 @@ impl ProtocolMessageType {
 
 pub fn get_block(stream: &mut TcpStream) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     let mut length_buf: [u8; 4] = [0; 4];
-    let mut test_buf: [u8; 1024] = [0; 1024];
-    println!("Before read length");
-    stream.read(&mut length_buf)?;
-    println!("After read length: {:?}", length_buf);
+    stream.read_exact(&mut length_buf)?;
     let length = u32::from_be_bytes([length_buf[0], length_buf[1], length_buf[2], length_buf[3]]);
-    println!("Length: {}", length);
-    let mut buf = vec![0; length as usize];
-    if length > 0 {
-        println!("Before read");
-        stream.read(&mut buf)?;
-        println!("After read: {:?}", buf);
-    } else {
-        stream.read(&mut test_buf)?;
-        return Ok(test_buf.to_vec());
-    }
-
+    let mut buf: Vec<u8> = vec![0; length as usize];
+    stream.read_exact(&mut buf)?;
     Ok(buf)
 }
 
@@ -88,91 +76,56 @@ pub fn download_file(
     custom_torrent: MetaInfo,
     output_file_path: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    println!("Entered download file");
     let bitfield = get_block(stream)?;
-    println!("Bitfield: {:?}", bitfield);
-    ProtocolMessage::deserialize(&bitfield)?;
-
+    let bitfield_response = ProtocolMessage::deserialize(&bitfield)?;
+    println!("Bitfield response: {:?}", bitfield_response);
     let interested = ProtocolMessage {
-        length: 4 + 1 + 1,
+        length: 1,
         message_type: ProtocolMessageType::Interested,
-        payload: vec![0x00],
+        payload: vec![],
     };
     let serialized_interested = interested.serialize();
-    stream.write(&serialized_interested)?;
+    stream.write_all(&serialized_interested)?;
 
     let unchoke = get_block(stream)?;
     let response = ProtocolMessage::deserialize(&unchoke.to_vec())?;
     println!("Response Unchoke: {:?}", response);
 
-    println!("Worked until here");
     let serialized_index = piece_index.to_be_bytes();
     let piece_length = custom_torrent.info.piece_length as u32;
-    let mut length: u32 = 2_u32.pow(14);
+    let mut length: u32;
     let mut total_length: u32 = 0;
-    let mut index: u32 = 0;
-    let last_block_length: u32 = piece_length % length;
-    let last_block_index: u32 = (piece_length / length) + 1;
+
     let mut piece_vector: Vec<u8> = Vec::new();
-    let mut payload: Vec<u8> = Vec::new();
-    payload.extend(serialized_index);
-    payload.extend(total_length.to_be_bytes());
-    payload.extend(length.to_be_bytes());
-    println!("Payload: {:?}", payload);
-    let request = ProtocolMessage {
-        length: 4 + 1 + payload.len() as u32,
-        message_type: ProtocolMessageType::Request,
-        payload: payload,
-    };
-    let serialized_request = request.serialize();
 
-    stream.write(&serialized_request)?;
-    // Read response(piece)
-    println!("Before reading piece");
-    let piece_response = get_block(stream)?;
-    println!("After reading piece response {:?}", piece_response);
-    index += 1;
-    total_length += length;
     while piece_length >= total_length {
-        if index == last_block_index {
-            length = last_block_length;
-        }
-
-        println!("Reading blocks");
+        length = (piece_length - total_length).min(2_u32.pow(14));
 
         let mut payload: Vec<u8> = Vec::new();
         payload.extend(serialized_index);
         payload.extend(total_length.to_be_bytes());
         payload.extend(length.to_be_bytes());
-        println!("Payload: {:?}", payload);
+
         let request = ProtocolMessage {
-            length: 4 + 1 + payload.len() as u32,
+            length: 1 + payload.len() as u32,
             message_type: ProtocolMessageType::Request,
             payload: payload,
         };
 
         let serialized_request = request.serialize();
 
-        stream.write(&serialized_request)?;
+        stream.write_all(&serialized_request)?;
         // Read response(piece)
-        println!("Before reading piece");
         let piece_response = get_block(stream)?;
-        println!("After reading piece response {:?}", piece_response);
-        // Payload includes block
-        if piece_response.len() == 0 {
-            println!("Piece response {:?}", piece_response);
-            break;
-        }
+
         let response = ProtocolMessage::deserialize(&piece_response.to_vec())?;
-        println!("Response Piece: {:?}", response);
 
         // If correct merge into piece vector
-        piece_vector.extend(&response.payload);
-        index += 1;
-        total_length += length;
+        piece_vector.extend(&response.payload[8..]);
+
+        total_length += 2_u32.pow(14);
     }
 
-    println!("Piece vector completed");
     let mut hasher = Sha1::new();
     hasher.update(&piece_vector);
     let result = hasher.finalize();

@@ -2,7 +2,6 @@ mod custom_bencode_decode;
 mod protocol_message;
 mod tcphandshake;
 mod tracker;
-mod tracker_bencode;
 mod tracker_response_serde_beconde;
 use custom_bencode_decode::decode_bn;
 use custom_bencode_decode::decode_torrent;
@@ -86,7 +85,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             if peers.len() == 0 {
                 return Err("Error: Peers length cant be zero".into());
             }
-            let peer_ip = peers[0].0.to_string() + ":" + &peers[0].1.to_string();
+            let peer_ip = peers[1].0.to_string() + ":" + &peers[1].1.to_string();
             complete_tcp_handshake_with_peer(&peer_ip, &info_hash)
         })
         .and_then(|mut stream| {
