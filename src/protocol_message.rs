@@ -65,6 +65,7 @@ pub fn get_block(stream: &mut TcpStream) -> Result<Vec<u8>, Box<dyn std::error::
     let mut length_buf: [u8; 4] = [0; 4];
     stream.read_exact(&mut length_buf)?;
     let length = u32::from_be_bytes([length_buf[0], length_buf[1], length_buf[2], length_buf[3]]);
+
     let mut buf: Vec<u8> = vec![0; length as usize];
     stream.read_exact(&mut buf)?;
     Ok(buf)
@@ -97,9 +98,17 @@ pub fn download_file(
     let mut total_length: u32 = 0;
 
     let mut piece_vector: Vec<u8> = Vec::new();
+    let file_length = custom_torrent.info.length as usize;
+    let latest_piece_length = (file_length - (piece_index as usize * piece_length as usize))
+        .min(piece_length as usize) as usize;
 
     while piece_length >= total_length {
-        length = (piece_length - total_length).min(2_u32.pow(14));
+        length = (latest_piece_length - total_length as usize)
+            .min(2_usize.pow(14))
+            .min(latest_piece_length) as u32;
+        if length == 0 {
+            break;
+        }
 
         let mut payload: Vec<u8> = Vec::new();
         payload.extend(serialized_index);
@@ -123,7 +132,7 @@ pub fn download_file(
         // If correct merge into piece vector
         piece_vector.extend(&response.payload[8..]);
 
-        total_length += 2_u32.pow(14);
+        total_length += length;
     }
 
     let mut hasher = Sha1::new();
