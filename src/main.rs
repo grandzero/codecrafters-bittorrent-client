@@ -3,6 +3,7 @@ mod protocol_message;
 mod tcphandshake;
 mod tracker;
 mod tracker_bencode;
+mod tracker_response_serde_beconde;
 use custom_bencode_decode::decode_bn;
 use custom_bencode_decode::decode_torrent;
 use custom_bencode_decode::print_pieces;
@@ -34,7 +35,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let torrent_content_as_bytes = fs::read(&args[2]).unwrap();
         if let Ok(custom_torrent) = decode_torrent(&torrent_content_as_bytes) {
             let info_hash = custom_torrent.info_hash();
-            tracker::get_torrent_response(&info_hash, &custom_torrent.announce)?;
+            tracker::get_torrent_response(
+                &info_hash,
+                &custom_torrent.announce,
+                custom_torrent.info.length,
+            )?;
         } else {
             println!("Error");
             return Ok(());
@@ -65,28 +70,36 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let torrent_content_as_bytes = fs::read(torrent_file_name).unwrap();
         let custom_torrent = decode_torrent(&torrent_content_as_bytes).unwrap();
         let info_hash: Vec<u8> = custom_torrent.info_hash();
-        let result = tracker::get_torrent_response(&info_hash, &custom_torrent.announce)
-            .and_then(|res| {
-                if let Ok(peers) = res.peers_as_ip_and_port() {
-                    return Ok(peers);
-                } else {
-                    return Err("Error: Peers could not found".into());
-                }
-            })
-            .and_then(|peers| {
-                if peers.len() == 0 {
-                    return Err("Error: Peers length cant be zero".into());
-                }
-                let peer_ip = peers[0].0.to_string() + ":" + &peers[0].1.to_string();
-                complete_tcp_handshake_with_peer(&peer_ip, &info_hash)
-            })
-            .and_then(|mut stream| {
-                download_file(&mut stream, piece_index, custom_torrent, &output_path)
-            })
-            .or_else(|err| {
-                println!("Error: {:?}", err);
-                return Err(err);
-            });
+        let result = tracker::get_torrent_response(
+            &info_hash,
+            &custom_torrent.announce,
+            custom_torrent.info.length,
+        )
+        .and_then(|res| {
+            if let Ok(peers) = res.peers_as_ip_and_port() {
+                return Ok(peers);
+            } else {
+                return Err("Error: Peers could not found".into());
+            }
+        })
+        .and_then(|peers| {
+            if peers.len() == 0 {
+                return Err("Error: Peers length cant be zero".into());
+            }
+            let peer_ip = peers[0].0.to_string() + ":" + &peers[0].1.to_string();
+            complete_tcp_handshake_with_peer(&peer_ip, &info_hash)
+        })
+        .and_then(|mut stream| {
+            download_file(
+                &mut stream,
+                piece_index as u32,
+                custom_torrent,
+                &output_path,
+            )
+        })
+        .or_else(|err| {
+            return Err(err);
+        });
         return result;
     } else {
         println!("unknown command: {}", args[1])

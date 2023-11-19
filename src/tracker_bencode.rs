@@ -13,7 +13,7 @@ use std::{
 #[derive(Debug)]
 pub struct TrackerResponse {
     interval: Option<i32>,
-    peers: Option<Vec<u8>>,
+    pub peers: Option<Vec<u8>>,
     complete: Option<i32>,
     incomplete: Option<i32>,
     min_interval: Option<i32>,
@@ -44,40 +44,50 @@ impl FromBencode for TrackerResponse {
         while let Some(pair) = dict_dec.next_pair()? {
             match pair {
                 (b"interval", value) => {
+                    // println!("Entered interval");
                     interval = i32::decode_bencode_object(value)
                         .context("interval")
                         .map(Some)?;
                 }
                 (b"peers", value) => {
-                    if let Object::Bytes(val) = value {
-                        println!("Peers: {:?}", val);
-                    }
+                    // match value {
+                    //     bendy::decoding::Object::Bytes(bytes) => {
+                    //         println!("Peers: {:?}", bytes);
+                    //     }
+
+                    //     _ => {}
+                    // }
                     peers = AsString::decode_bencode_object(value)
                         .context("peers")
                         .map(|bytes| Some(bytes.0))?;
                 }
-                (b"min interval", value) => {
+                (b"min interval", value) | (b"min_interval", value) => {
+                    // println!("Entered min interval");
                     min_interval = i32::decode_bencode_object(value)
                         .context("min interval")
                         .map(Some)?;
                 }
                 (b"complete", value) => {
+                    // println!("Entered complete");
                     complete = i32::decode_bencode_object(value)
                         .context("complete")
                         .map(Some)?;
                 }
                 (b"incomplete", value) => {
+                    // println!("Entered incomplete");
                     incomplete = i32::decode_bencode_object(value)
                         .context("incomplete")
                         .map(Some)?;
                 }
 
                 (b"downloaded", value) => {
+                    // println!("Entered downloaded");
                     downloaded = i32::decode_bencode_object(value)
                         .context("downloaded")
                         .map(Some)?;
                 }
                 (b"uploaded", value) => {
+                    // println!("Entered uploaded");
                     uploaded = i32::decode_bencode_object(value)
                         .context("uploaded")
                         .map(Some)?;

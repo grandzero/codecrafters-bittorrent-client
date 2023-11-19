@@ -1,6 +1,7 @@
 use std::convert::From;
 use std::io::{Read, Write};
 use std::net::TcpStream;
+
 #[derive(Debug, Clone)]
 pub struct TcpHandshake {
     pub length: u8,
@@ -54,12 +55,12 @@ pub fn complete_tcp_handshake_with_peer(
     if len != 68 {
         return Err("Error : Tcp invalid lenght".into());
     }
+    let mut buffer: [u8; 68] = [0; 68];
     let mut stream = TcpStream::connect(ip_address)?;
-    stream.write_all(&serialize_handshake(handshake))?;
-    let mut buffer = [0; 68];
-    stream.read(&mut buffer)?;
-
+    stream.write(&serialize_handshake(handshake))?;
+    stream.read_exact(&mut buffer)?;
     println!("Handshake successful");
     println!("Peer ID: {}", create_str_from_hex(&(buffer[48..]).to_vec()));
+
     return Ok(stream);
 }
