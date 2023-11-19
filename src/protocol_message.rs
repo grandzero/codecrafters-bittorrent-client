@@ -1,6 +1,6 @@
 use crate::custom_bencode_decode::MetaInfo;
 use sha1::{Digest, Sha1};
-use std::{io::Read, io::Write, net::TcpStream};
+use std::{io::Read, io::Write, net::TcpStream, path::PathBuf};
 #[derive(Debug, Clone)]
 pub struct ProtocolMessage {
     pub length: u32,
@@ -150,7 +150,8 @@ pub fn download_file(
         return Err("Hashes are not equal".into());
     }
     // Write piece vector to file
-    let mut file = std::fs::File::create(output_file_path)?;
+    let file_path = PathBuf::from(output_file_path);
+    let mut file = std::fs::File::create(file_path)?;
     file.write_all(&piece_vector)?;
     Ok(())
 }

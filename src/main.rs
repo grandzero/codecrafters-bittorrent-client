@@ -61,7 +61,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("Downloading piece");
         let o = &args[2];
         let mut output_path = &String::from("output.torrent");
-        if o == "o" {
+        if o == "-o" {
             output_path = &args[3];
         }
         let torrent_file_name = &args[4];
